@@ -1,8 +1,4 @@
-"""
-disk_scheduling.py
-FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK.
-Returns the ordered visit list with per-hop movement and the total seek distance.
-"""
+
 
 
 def _fcfs(queue, head, max_cyl, direction):
