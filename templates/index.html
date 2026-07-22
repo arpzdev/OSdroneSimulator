@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drone OS Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-drone" id="logo-drone"></span>
+    <div>
+      <h1>Drone OS Simulator</h1>
+      <p>Operating system algorithms, visualized as a delivery drone fleet</p>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="cpu">CPU Scheduling</button>
+    <button class="tab" data-tab="mem">Memory Management</button>
+    <button class="tab" data-tab="dsk">Disk Scheduling</button>
+    <button class="tab" data-tab="fil">File Allocation</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ CPU SCHEDULING ============ -->
+<section id="panel-cpu" class="panel active">
+  <div class="panel-head">
+    <h2>CPU Scheduling</h2>
+    <p>Each delivery order is a <b>process</b>. The drone is the <b>CPU</b> — it can only fly one order at a time. The scheduler decides which order launches next.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="controls">
+      <div class="card">
+        <h3>Algorithm</h3>
+        <select id="cpu-algo">
+          <option value="FCFS">First Come First Serve (FCFS)</option>
+          <option value="SJF">Shortest Job First (SJF)</option>
+          <option value="PRIORITY">Priority (non-preemptive)</option>
+          <option value="RR">Round Robin (RR)</option>
+        </select>
+        <div id="cpu-quantum-row" class="field hidden">
+          <label>Time Quantum</label>
+          <input type="number" id="cpu-quantum" value="2" min="1">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Add Delivery Order</h3>
+        <div class="field"><label>Arrival Time</label><input type="number" id="cpu-arrival" value="0" min="0"></div>
+        <div class="field"><label>Burst (flight) Time</label><input type="number" id="cpu-burst" value="4" min="1"></div>
+        <div class="field"><label>Priority (1 = highest)</label><input type="number" id="cpu-priority" value="1" min="1"></div>
+        <button class="btn primary" id="cpu-add">+ Add Order</button>
+        <div class="btn-row">
+          <button class="btn ghost" id="cpu-sample">Load Sample</button>
+          <button class="btn ghost danger" id="cpu-clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Simulation</h3>
+        <div class="field"><label>Animation speed</label>
+          <input type="range" id="cpu-speed" min="1" max="10" value="5">
+        </div>
+        <button class="btn accent" id="cpu-run">&#9654; Run &amp; Animate</button>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <div class="card">
+        <h3>Order Queue (Process Table)</h3>
+        <table class="tbl" id="cpu-ptable">
+          <thead><tr><th>PID</th><th>Arrival</th><th>Burst</th><th>Priority</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>Airspace <span class="sub" id="cpu-clock">t = 0</span></h3>
+        <div class="airspace" id="cpu-airspace">
+          <div class="pad">HUB</div>
+          <div class="skyline"></div>
+          <div class="dropzone">DROP</div>
+          <div class="drone-wrap" id="cpu-drone"></div>
+          <div class="carry-tag hidden" id="cpu-carry"></div>
+        </div>
+        <div class="queue-strip" id="cpu-queue"></div>
+      </div>
+
+      <div class="card">
+        <h3>Gantt Chart (Flight Timeline)</h3>
+        <div class="gantt" id="cpu-gantt"><span class="placeholder">Run a simulation to see the timeline.</span></div>
+        <div class="gantt-axis" id="cpu-axis"></div>
+      </div>
+
+      <div class="card">
+        <h3>Results</h3>
+        <table class="tbl" id="cpu-results">
+          <thead><tr><th>PID</th><th>Arrival</th><th>Burst</th><th>Completion</th><th>Turnaround</th><th>Waiting</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="stat-row" id="cpu-avg"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MEMORY MANAGEMENT ============ -->
+<section id="panel-mem" class="panel">
+  <div class="panel-head">
+    <h2>Memory Management</h2>
+    <p>Warehouse bays are <b>memory partitions</b>. Incoming packages are <b>processes</b> asking for space. First Fit, Best Fit and Worst Fit decide which bay a package lands in.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="controls">
+      <div class="card">
+        <h3>Bay Configuration</h3>
+        <div class="field"><label>Partition sizes (KB, comma separated)</label>
+          <input type="text" id="mem-sizes" value="100, 500, 200, 300, 600">
+        </div>
+        <button class="btn ghost" id="mem-apply">Rebuild Bays</button>
+      </div>
+
+      <div class="card">
+        <h3>Incoming Package</h3>
+        <div class="field"><label>Package size (KB)</label><input type="number" id="mem-size" value="212" min="1"></div>
+        <div class="field"><label>Strategy</label>
+          <select id="mem-strategy">
+            <option value="first">First Fit</option>
+            <option value="best">Best Fit</option>
+            <option value="worst">Worst Fit</option>
+          </select>
+        </div>
+        <button class="btn primary" id="mem-alloc">Allocate</button>
+        <div class="btn-row">
+          <button class="btn ghost" id="mem-sample">Load Sample</button>
+          <button class="btn ghost danger" id="mem-reset">Reset</button>
+        </div>
+        <p class="hint">Tip: click an occupied bay to release (deallocate) it.</p>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <div class="card">
+        <h3>Warehouse Bays (Memory Blocks)</h3>
+        <div class="bays" id="mem-bays"></div>
+        <div class="drone-wrap overlay-drone hidden" id="mem-drone"></div>
+      </div>
+
+      <div class="card">
+        <h3>Allocation Table</h3>
+        <table class="tbl" id="mem-table">
+          <thead><tr><th>Package</th><th>Size</th><th>Strategy</th><th>Bay</th><th>Bay Size</th><th>Internal Frag.</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="stat-row" id="mem-stats"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DISK SCHEDULING ============ -->
+<section id="panel-dsk" class="panel">
+  <div class="panel-head">
+    <h2>Disk Scheduling</h2>
+    <p>The delivery corridor is the <b>disk surface</b> (cylinders 0&ndash;199). Drop points are <b>I/O requests</b> and the drone is the <b>disk head</b>. Less total travel = less seek time.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="controls">
+      <div class="card">
+        <h3>Request Queue</h3>
+        <div class="field"><label>Drop points (comma separated)</label>
+          <input type="text" id="dsk-queue" value="82, 170, 43, 140, 24, 16, 190">
+        </div>
+        <div class="field"><label>Start position (head)</label><input type="number" id="dsk-head" value="50" min="0"></div>
+        <div class="field"><label>Max cylinder</label><input type="number" id="dsk-max" value="199" min="10"></div>
+      </div>
+
+      <div class="card">
+        <h3>Algorithm</h3>
+        <select id="dsk-algo">
+          <option value="FCFS">FCFS</option>
+          <option value="SSTF">SSTF</option>
+          <option value="SCAN">SCAN</option>
+          <option value="CSCAN">C-SCAN</option>
+          <option value="LOOK">LOOK</option>
+          <option value="CLOOK">C-LOOK</option>
+        </select>
+        <div class="field" id="dsk-dir-row"><label>Initial direction</label>
+          <select id="dsk-dir">
+            <option value="right">Towards max</option>
+            <option value="left">Towards 0</option>
+          </select>
+        </div>
+        <button class="btn accent" id="dsk-run">&#9654; Run &amp; Animate</button>
+        <div class="btn-row">
+          <button class="btn ghost" id="dsk-sample">Load Sample</button>
+          <button class="btn ghost danger" id="dsk-reset">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <div class="card">
+        <h3>Delivery Corridor <span class="sub" id="dsk-odometer">travelled: 0</span></h3>
+        <div class="corridor" id="dsk-corridor">
+          <div class="corridor-track" id="dsk-track"></div>
+          <div class="drone-wrap corridor-drone" id="dsk-drone"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Seek Chart (Head Movement)</h3>
+        <canvas id="dsk-chart" width="860" height="360"></canvas>
+      </div>
+
+      <div class="card">
+        <h3>Service Order</h3>
+        <table class="tbl" id="dsk-table">
+          <thead><tr><th>Step</th><th>From</th><th>To</th><th>Movement</th><th>Note</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="stat-row" id="dsk-total"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FILE ALLOCATION ============ -->
+<section id="panel-fil" class="panel">
+  <div class="panel-head">
+    <h2>File Allocation</h2>
+    <p>The parcel wall is a <b>disk of 64 blocks</b>. Storing a shipment = allocating a <b>file</b>. Compare contiguous, linked and indexed placement.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="controls">
+      <div class="card">
+        <h3>Store a File</h3>
+        <div class="field"><label>File name</label><input type="text" id="fil-name" value="orders.log"></div>
+        <div class="field"><label>Size (blocks)</label><input type="number" id="fil-size" value="5" min="1" max="20"></div>
+        <div class="field"><label>Method</label>
+          <select id="fil-method">
+            <option value="contiguous">Contiguous</option>
+            <option value="linked">Linked</option>
+            <option value="indexed">Indexed</option>
+          </select>
+        </div>
+        <button class="btn primary" id="fil-add">Store File</button>
+        <div class="btn-row">
+          <button class="btn ghost" id="fil-sample">Load Sample</button>
+          <button class="btn ghost danger" id="fil-reset">Format Disk</button>
+        </div>
+        <p class="hint">Linked chains and index pointers are drawn on the grid. Delete files from the table.</p>
+      </div>
+
+      <div class="card">
+        <h3>Legend</h3>
+        <div class="legend">
+          <span><i class="sw sw-free"></i> Free block</span>
+          <span><i class="sw sw-res"></i> Reserved (system)</span>
+          <span><i class="sw sw-idx"></i> Index block</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="stage">
+      <div class="card">
+        <h3>Parcel Wall (Disk Blocks)</h3>
+        <div class="grid-wrap">
+          <div class="blockgrid" id="fil-grid"></div>
+          <svg class="chain-svg" id="fil-svg"></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>File Table (Directory)</h3>
+        <table class="tbl" id="fil-table">
+          <thead><tr><th>File</th><th>Method</th><th>Size</th><th>Start / Index</th><th>Blocks</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <span>Drone OS Simulator &mdash; OS lab project</span>
+  <span>CPU &middot; Memory &middot; Disk &middot; Files</span>
+</footer>
+
+<script src="/static/ui.js"></script>
+</body>
+</html>
